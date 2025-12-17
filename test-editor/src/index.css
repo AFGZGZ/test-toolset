@@ -3,16 +3,21 @@
 }
 
 body {
+  height: 100%;
   margin: 0;
+  overflow: hidden;
   font-family: system-ui, -apple-system, sans-serif;
-  background: #f6f7f9;
+  background: #ffffff;
   color: #1f2937;
 }
 
 .app {
-  max-width: 900px;
-  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  height: 100vh;
   padding: 24px;
+  box-sizing: border-box;
 }
 
 .app-header {
@@ -31,12 +36,30 @@ body {
   flex-direction: column;
   gap: 16px;
 }
+.editor-panel,
+.preview-panel {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.panel-header {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  padding-bottom: 8px;
+}
 
 .question-card {
-  background: #fff;
+  background: #f6f6f6;
   border-radius: 8px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #666;
   padding: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
+  margin-right: 10px;
 }
 
 .question-header {
@@ -125,4 +148,12 @@ button.danger {
   color: #000;
   border-bottom-color: #007bff;
   font-weight: 600;
+}
+.badge {
+  margin: 10px 0px;
+  padding: 2.5px 12px;
+  border-radius: 4px;
+  /* background-color: #dc2626;
+  color: #fff; */
+  color: #dc2626;
 }

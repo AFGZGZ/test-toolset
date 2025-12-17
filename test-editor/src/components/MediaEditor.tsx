@@ -1,4 +1,4 @@
-import type { Media } from "../types/questions";
+import type { Media, AudioMedia, ImageMedia } from "../types/questions";
 import { useMedia } from "../context/MediaContext";
 
 interface Props {
@@ -10,29 +10,56 @@ interface Props {
 export function MediaEditor({ section, media = [], onChange }: Props) {
   const { media: indexed } = useMedia();
 
-  const audio = media.find((m) => m.type === "audio") as
-    | { type: "audio"; file: string }
-    | undefined;
+  const audio = media.find((m): m is AudioMedia => m.type === "audio");
 
-  const images = media.find((m) => m.type === "image") as
-    | { type: "image"; files: string[] }
-    | undefined;
+  const images = media.find((m): m is ImageMedia => m.type === "image");
 
-  const updateAudio = (file: string) => {
+  const setAudio = (file: string) => {
     const next = media.filter((m) => m.type !== "audio");
-    onChange([...next, { type: "audio", file }]);
+
+    onChange([
+      ...next,
+      {
+        type: "audio",
+        file,
+        source: "manual",
+      },
+    ]);
   };
 
   const removeAudio = () => {
     onChange(media.filter((m) => m.type !== "audio"));
   };
 
-  const updateImages = (files: string[]) => {
-    const next = media.filter((m) => m.type !== "image");
-    if (files.length > 0) {
-      onChange([...next, { type: "image", files }]);
+  const addImage = (file: string) => {
+    const current = images?.files ?? [];
+
+    onChange([
+      ...media.filter((m) => m.type !== "image"),
+      {
+        type: "image",
+        files: [...current, file],
+        source: "manual",
+      },
+    ]);
+  };
+
+  const removeImage = (index: number) => {
+    if (!images) return;
+
+    const nextFiles = images.files.filter((_, i) => i !== index);
+
+    if (nextFiles.length === 0) {
+      onChange(media.filter((m) => m.type !== "image"));
     } else {
-      onChange(next);
+      onChange([
+        ...media.filter((m) => m.type !== "image"),
+        {
+          type: "image",
+          files: nextFiles,
+          source: "manual",
+        },
+      ]);
     }
   };
 
@@ -40,7 +67,6 @@ export function MediaEditor({ section, media = [], onChange }: Props) {
     <div className="media-editor">
       <h4>Media</h4>
 
-      {/* AUDIO */}
       {section === "listening" && (
         <div className="media-block">
           <label>Audio</label>
@@ -48,44 +74,57 @@ export function MediaEditor({ section, media = [], onChange }: Props) {
           {audio ? (
             <div className="media-row">
               <code>{audio.file}</code>
+              {audio.source === "auto" && <span className="badge">auto</span>}
               <button onClick={removeAudio}>Remove</button>
             </div>
           ) : (
-            <button
+            <select
               disabled={!indexed?.audio.length}
-              onClick={() => updateAudio(indexed!.audio[0])}
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) setAudio(e.target.value);
+              }}
             >
-              ➕ Pick audio
-            </button>
+              <option value="" disabled>
+                Select audio…
+              </option>
+              {indexed?.audio.map((file) => (
+                <option key={file} value={file}>
+                  {file}
+                </option>
+              ))}
+            </select>
           )}
         </div>
       )}
 
-      {/* IMAGES */}
       <div className="media-block">
         <label>Images</label>
 
-        {(images?.files ?? []).map((f, i) => (
-          <div key={i} className="media-row">
-            <code>{f}</code>
-            <button
-              onClick={() =>
-                updateImages(images!.files.filter((_, x) => x !== i))
-              }
-            >
-              ✕
-            </button>
+        {(images?.files ?? []).map((file, i) => (
+          <div key={i}>
+            <code>{file}</code>
+            {images?.source === "auto" && <span className="badge">auto</span>}
+            <button onClick={() => removeImage(i)}>✕</button>
           </div>
         ))}
 
-        <button
+        <select
           disabled={!indexed?.images.length}
-          onClick={() =>
-            updateImages([...(images?.files ?? []), indexed!.images[0]])
-          }
+          defaultValue=""
+          onChange={(e) => {
+            if (e.target.value) addImage(e.target.value);
+          }}
         >
-          ➕ Add image
-        </button>
+          <option value="" disabled>
+            Add image…
+          </option>
+          {indexed?.images.map((file) => (
+            <option key={file} value={file}>
+              {file}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { ManifestFile, Question } from "./types";
+import { ManifestFile, Question } from "../types";
 
 export function validatePack(
   questions: Question[],

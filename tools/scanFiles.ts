@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { ManifestFile, FileType } from "./types";
+import { ManifestFile, FileType } from "../types";
 
 export function scanPackFiles(packDir: string): {
   files: ManifestFile[];

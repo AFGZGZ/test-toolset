@@ -1,6 +1,6 @@
 import type { EditorQuestion } from "../types/test";
 import type { MediaIndex } from "../types/media";
-import type { Media } from "../types/questions";
+import type { AudioMedia, ImageMedia } from "../types/questions";
 
 const baseName = (path: string) =>
   path
@@ -20,27 +20,44 @@ export function autoBindMedia(
   return questions.map((q) => {
     if (!q.id) return q;
 
-    const resultMedia: Media[] = [];
+    const existingAudio = q.media.find(
+      (m) => m.type === "audio" && m.source === "manual"
+    );
+
+    const existingImages = q.media.find(
+      (m) => m.type === "image" && m.source === "manual"
+    );
 
     const audioMatch = media.audio.find((a) => matchesId(a, q.id));
-    if (audioMatch) {
-      resultMedia.push({
-        type: "audio",
-        file: audioMatch,
-      });
-    }
-
     const imageMatches = media.images.filter((img) => matchesId(img, q.id));
-    if (imageMatches.length) {
-      resultMedia.push({
-        type: "image",
-        files: imageMatches,
-      });
-    }
 
     return {
       ...q,
-      media: resultMedia.length ? resultMedia : [],
+      media: [
+        ...(existingAudio
+          ? [existingAudio]
+          : audioMatch
+          ? [
+              {
+                type: "audio",
+                file: audioMatch,
+                source: "auto",
+              } as AudioMedia,
+            ]
+          : []),
+
+        ...(existingImages
+          ? [existingImages]
+          : imageMatches.length
+          ? [
+              {
+                type: "image",
+                files: imageMatches,
+                source: "auto",
+              } as ImageMedia,
+            ]
+          : []),
+      ],
     };
   });
 }

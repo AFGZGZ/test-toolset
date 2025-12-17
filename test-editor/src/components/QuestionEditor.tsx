@@ -1,5 +1,4 @@
 import type { EditorQuestion, TestMeta } from "../types/test";
-import { buildQuestionId } from "../functions/serializeQuestion";
 import { MediaEditor } from "./MediaEditor";
 
 export interface Props {
@@ -9,21 +8,13 @@ export interface Props {
   testMeta: TestMeta;
 }
 
-export function QuestionEditor({
-  question,
-  onChange,
-  onDelete,
-  testMeta,
-}: // section,
-Props) {
+export function QuestionEditor({ question, onChange, onDelete }: Props) {
   const update = (patch: Partial<EditorQuestion>) => {
     onChange({
       ...question,
       ...patch,
     });
   };
-
-  const id = buildQuestionId(testMeta, question);
 
   const updateOption = (optionIndex: number, value: string) => {
     const next = [...question.options];
@@ -39,8 +30,8 @@ Props) {
   return (
     <section className="question-card">
       <header className="question-header">
-        <div style={{ fontSize: 12, opacity: 0.7 }}>
-          ID: <code>{id}</code>
+        <div style={{ fontSize: 13, opacity: 0.9 }}>
+          ID: <code>{question.id}</code>
         </div>
         <button className="danger" onClick={onDelete}>
           Delete

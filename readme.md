@@ -1,8 +1,18 @@
+### TEST EDITOR
+
+RUN:
+cd test-editor
+npm run dev
+
+### CLI TOOL
+
 RUN: npm run build:pack
+
+### STRUCTURE
 
 Input:
 
-pack/
+```pack/
 ├── questions.json
 ├── audio/
 │ └── xxx.mp3
@@ -10,9 +20,11 @@ pack/
 ├── images/
 │ └── xxx.png
 │ └── ...
+```
 
 Output:
-dist/pack.zip
+
+```dist/pack.zip
 ├── questions.json
 ├── manifest.json
 ├── audio/
@@ -21,3 +33,4 @@ dist/pack.zip
 ├── images/
 │ └── xxx.png
 │ └── ...
+```

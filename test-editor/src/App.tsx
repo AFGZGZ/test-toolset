@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import type { Section } from "./types/questions";
-import type { EditorQuestion } from "./types/test";
+import type { Section, Question } from "./types/questions";
+import type { EditorQuestion, TestMeta } from "./types/test";
 import { QuestionEditor } from "./components/QuestionEditor";
 import { JsonPreview } from "./components/JsonPreview";
-import type { TestMeta } from "./types/test";
 import { pickAndIndexMedia } from "./functions/mediaIndexer";
 import { useMedia } from "./context/MediaContext";
 import { autoBindMedia } from "./functions/mediaAutoBind";
+import { buildQuestionId } from "./functions/buildQuestionId";
+import { toExportQuestion } from "./functions/exportQuestions";
 
 const createEmptyQuestion = (
   index: number,
@@ -39,32 +40,42 @@ export default function App() {
 
   const { media, setMedia } = useMedia();
 
+  const applyIds = (list: EditorQuestion[], meta: TestMeta): EditorQuestion[] =>
+    list.map((q) => ({
+      ...q,
+      id: buildQuestionId(meta, q),
+    }));
+
   const pickMediaFolder = async () => {
     const indexed = await pickAndIndexMedia();
+    if (!indexed) return;
+
     setMedia(indexed);
     console.log(indexed);
-    setQuestions((prev) => ({
-      listening: autoBindMedia(prev.listening, indexed),
-      reading: autoBindMedia(prev.reading, indexed),
-    }));
+    setQuestions((prev) => {
+      const listening = applyIds(prev.listening, testMeta);
+      const reading = applyIds(prev.reading, testMeta);
+
+      return {
+        listening: autoBindMedia(listening, indexed),
+        reading: autoBindMedia(reading, indexed),
+      };
+    });
   };
 
   useEffect(() => {
     if (!media) return;
 
-    setQuestions((prev) => ({
-      listening: autoBindMedia(prev.listening, media),
-      reading: autoBindMedia(prev.reading, media),
-    }));
-  }, [media]);
+    setQuestions((prev) => {
+      const listening = applyIds(prev.listening, testMeta);
+      const reading = applyIds(prev.reading, testMeta);
 
-  /* ----------------------------- */
-  /* Question mutations            */
-  /* ----------------------------- */
-
-  // const updateQuestion = (index: number, updated: EditorQuestion) => {
-  //   setQuestions((prev) => prev.map((q, i) => (i === index ? updated : q)));
-  // };
+      return {
+        listening: autoBindMedia(listening, media),
+        reading: autoBindMedia(reading, media),
+      };
+    });
+  }, [media, testMeta]);
 
   const deleteQuestion = (index: number) => {
     setQuestions((prev) => {
@@ -84,22 +95,28 @@ export default function App() {
       const list = prev[currentSection];
       const nextIndex = list.length + 1;
 
+      const newQuestion = createEmptyQuestion(nextIndex, currentSection);
+
+      const nextList = [...list, newQuestion];
+
+      const withIds = applyIds(nextList, testMeta);
+
+      const finalList = media ? autoBindMedia(withIds, media) : withIds;
+
       return {
         ...prev,
-        [currentSection]: [
-          ...list,
-          createEmptyQuestion(nextIndex, currentSection),
-        ],
+        [currentSection]: finalList,
       };
     });
   };
 
-  /* ----------------------------- */
-  /* Export                        */
-  /* ----------------------------- */
-
   const exportQuestions = () => {
-    const blob = new Blob([JSON.stringify(questions, null, 2)], {
+    const exportData: Question[] = [
+      ...questions.listening,
+      ...questions.reading,
+    ].map((q) => toExportQuestion(q, testMeta));
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
       type: "application/json",
     });
 
@@ -110,72 +127,76 @@ export default function App() {
   };
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "2fr 1fr",
-        gap: 24,
-        padding: 24,
-        height: "100vh",
-        boxSizing: "border-box",
-      }}
-    >
+    <div className="app">
       {/* LEFT: Editor */}
-      <div style={{ overflowY: "auto" }}>
-        <h1>TOPIK Test Editor</h1>
-        <div style={{ marginBottom: 24 }}>
-          <h3>Test Settings</h3>
-          <label>
-            Level:
-            <select
-              value={testMeta.level}
-              onChange={(e) =>
-                setTestMeta((p) => ({
-                  ...p,
-                  level: Number(e.target.value) as 1 | 2,
-                }))
-              }
+      <div
+        // style={{ overflowY: "auto" }}
+        className="editor-panel"
+      >
+        <div className="panel-header">
+          <h2>TOPIK Test Editor</h2>
+          <div style={{ marginBottom: 24 }}>
+            <h3>Test Settings</h3>
+            <label>
+              Level:
+              <select
+                style={{ marginBottom: 10 }}
+                value={testMeta.level}
+                onChange={(e) =>
+                  setTestMeta((p) => ({
+                    ...p,
+                    level: Number(e.target.value) as 1 | 2,
+                  }))
+                }
+              >
+                <option value={1}>TOPIK I</option>
+                <option value={2}>TOPIK II</option>
+              </select>
+            </label>
+
+            <label>
+              Test #
+              <input
+                type="number"
+                value={testMeta.testNumber}
+                onChange={(e) =>
+                  setTestMeta((p) => ({
+                    ...p,
+                    testNumber: Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
+            <div
+              style={{ display: "flex", alignItems: "center", marginTop: 20 }}
             >
-              <option value={1}>TOPIK I</option>
-              <option value={2}>TOPIK II</option>
-            </select>
-          </label>
+              <button onClick={pickMediaFolder}>📂 Pick Media Folder</button>
 
-          <label style={{ marginLeft: 12 }}>
-            Test #
-            <input
-              type="number"
-              value={testMeta.testNumber}
-              onChange={(e) =>
-                setTestMeta((p) => ({
-                  ...p,
-                  testNumber: Number(e.target.value),
-                }))
-              }
-            />
-          </label>
-          <button onClick={pickMediaFolder}>📂 Pick Media Folder</button>
-
-          {media && (
-            <div style={{ fontSize: 12, opacity: 0.7 }}>
-              🎧 {media.audio.length} audio · 🖼 {media.images.length} images
+              {media && (
+                <div style={{ fontSize: 12, opacity: 0.7, marginLeft: 10 }}>
+                  Loaded: 🎧 {media.audio.length} audio · 🖼{" "}
+                  {media.images.length} images
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="tabs">
-          <button
-            className={`tab ${currentSection === "listening" ? "active" : ""}`}
-            onClick={() => setCurrentSection("listening")}
-          >
-            🎧 Listening ({questions.listening.length})
-          </button>
+          </div>
+          <div className="tabs">
+            <button
+              className={`tab ${
+                currentSection === "listening" ? "active" : ""
+              }`}
+              onClick={() => setCurrentSection("listening")}
+            >
+              🎧 Listening ({questions.listening.length})
+            </button>
 
-          <button
-            className={`tab ${currentSection === "reading" ? "active" : ""}`}
-            onClick={() => setCurrentSection("reading")}
-          >
-            📖 Reading ({questions.reading.length})
-          </button>
+            <button
+              className={`tab ${currentSection === "reading" ? "active" : ""}`}
+              onClick={() => setCurrentSection("reading")}
+            >
+              📖 Reading ({questions.reading.length})
+            </button>
+          </div>
         </div>
         <h3>Questions:</h3>
         {questions[currentSection].map((q, index) => (
@@ -197,15 +218,28 @@ export default function App() {
 
         <div style={{ marginTop: 24 }}>
           <button onClick={addQuestion}>➕ Add Question</button>
-          <button onClick={exportQuestions} style={{ marginLeft: 12 }}>
-            💾 Export questions.json
-          </button>
         </div>
       </div>
 
       {/* RIGHT: JSON Preview */}
-      <div>
-        <h3>Live JSON Preview</h3>
+      <div
+        className="preview-panel"
+        // style={{ overflowY: "auto" }}
+      >
+        <div
+          className="panel-header"
+          style={{ display: "flex", alignItems: "center" }}
+        >
+          <h3>Live JSON Preview</h3>
+          <button
+            onClick={() => {
+              exportQuestions();
+            }}
+            style={{ marginLeft: 12, height: 30 }}
+          >
+            💾 Save JSON
+          </button>
+        </div>
         <JsonPreview questions={questions} testMeta={testMeta} />
       </div>
     </div>
