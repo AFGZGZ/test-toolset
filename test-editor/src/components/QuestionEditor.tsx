@@ -17,7 +17,12 @@ export function QuestionEditor({ question, onChange, onDelete }: Props) {
   };
 
   const updateOption = (optionIndex: number, value: string) => {
-    const next = [...question.options];
+    const next: [string, string, string, string] = [...question.options] as [
+      string,
+      string,
+      string,
+      string
+    ];
     next[optionIndex] = value;
 
     update({ options: next });

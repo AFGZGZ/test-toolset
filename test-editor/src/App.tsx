@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { Section, Question } from "./types/questions";
+import type { Section } from "./types/questions";
 import type { EditorQuestion, TestMeta } from "./types/test";
 import { QuestionEditor } from "./components/QuestionEditor";
 import { JsonPreview } from "./components/JsonPreview";
@@ -7,10 +7,10 @@ import { pickAndIndexMedia } from "./functions/mediaIndexer";
 import { useMedia } from "./context/MediaContext";
 import { autoBindMedia } from "./functions/mediaAutoBind";
 import { buildQuestionId } from "./functions/buildQuestionId";
-import { toExportQuestion } from "./functions/exportQuestions";
+import { exportQuestions } from "./functions/exportQuestions";
 
 const createEmptyQuestion = (
-  index: number,
+  globalIndex: number,
   section: Section
 ): EditorQuestion => ({
   id: "",
@@ -19,7 +19,7 @@ const createEmptyQuestion = (
   options: ["", "", "", ""],
   correctAnswer: "",
   media: [],
-  index,
+  globalIndex,
 });
 
 export default function App() {
@@ -30,117 +30,107 @@ export default function App() {
 
   const [currentSection, setCurrentSection] = useState<Section>("listening");
 
-  const [questions, setQuestions] = useState<{
-    listening: EditorQuestion[];
-    reading: EditorQuestion[];
-  }>({
-    listening: [createEmptyQuestion(1, "listening")],
-    reading: [],
-  });
+  const [questions, setQuestions] = useState<EditorQuestion[]>([
+    createEmptyQuestion(1, "listening"),
+  ]);
 
   const { media, setMedia } = useMedia();
 
-  const applyIds = (list: EditorQuestion[], meta: TestMeta): EditorQuestion[] =>
-    list.map((q) => ({
+  const normalizeQuestions = (
+    list: EditorQuestion[],
+    mediaIndex = media
+  ): EditorQuestion[] => {
+    const withIndex = list.map((q, i) => ({
       ...q,
-      id: buildQuestionId(meta, q),
+      globalIndex: i + 1,
     }));
+
+    const withIds = withIndex.map((q) => ({
+      ...q,
+      id: buildQuestionId(testMeta, q.section, q.globalIndex),
+    }));
+
+    return mediaIndex ? autoBindMedia(withIds, mediaIndex) : withIds;
+  };
 
   const pickMediaFolder = async () => {
     const indexed = await pickAndIndexMedia();
     if (!indexed) return;
 
     setMedia(indexed);
-    console.log(indexed);
-    setQuestions((prev) => {
-      const listening = applyIds(prev.listening, testMeta);
-      const reading = applyIds(prev.reading, testMeta);
-
-      return {
-        listening: autoBindMedia(listening, indexed),
-        reading: autoBindMedia(reading, indexed),
-      };
-    });
+    setQuestions((prev) => normalizeQuestions(prev, indexed));
   };
 
   useEffect(() => {
     if (!media) return;
-
-    setQuestions((prev) => {
-      const listening = applyIds(prev.listening, testMeta);
-      const reading = applyIds(prev.reading, testMeta);
-
-      return {
-        listening: autoBindMedia(listening, media),
-        reading: autoBindMedia(reading, media),
-      };
-    });
+    setQuestions((prev) => normalizeQuestions(prev, media));
   }, [media, testMeta]);
-
-  const deleteQuestion = (index: number) => {
-    setQuestions((prev) => {
-      const nextList = prev[currentSection]
-        .filter((_, i) => i !== index)
-        .map((q, i) => ({ ...q, index: i + 1 }));
-
-      return {
-        ...prev,
-        [currentSection]: nextList,
-      };
-    });
-  };
 
   const addQuestion = () => {
     setQuestions((prev) => {
-      const list = prev[currentSection];
-      const nextIndex = list.length + 1;
+      const newQuestion = createEmptyQuestion(prev.length + 1, currentSection);
 
-      const newQuestion = createEmptyQuestion(nextIndex, currentSection);
+      let next: EditorQuestion[];
 
-      const nextList = [...list, newQuestion];
+      if (currentSection === "listening") {
+        // Insert BEFORE first reading question
+        const firstReadingIndex = prev.findIndex(
+          (q) => q.section === "reading"
+        );
 
-      const withIds = applyIds(nextList, testMeta);
+        if (firstReadingIndex === -1) {
+          // No reading yet → append
+          next = [...prev, newQuestion];
+        } else {
+          next = [
+            ...prev.slice(0, firstReadingIndex),
+            newQuestion,
+            ...prev.slice(firstReadingIndex),
+          ];
+        }
+      } else {
+        // Reading questions always go at the end
+        next = [...prev, newQuestion];
+      }
 
-      const finalList = media ? autoBindMedia(withIds, media) : withIds;
-
-      return {
-        ...prev,
-        [currentSection]: finalList,
-      };
+      return normalizeQuestions(next);
+    });
+  };
+  const deleteQuestion = (globalIndex: number) => {
+    setQuestions((prev) => {
+      const next = prev.filter((q) => q.globalIndex !== globalIndex);
+      return normalizeQuestions(next);
     });
   };
 
-  const exportQuestions = () => {
-    const exportData: Question[] = [
-      ...questions.listening,
-      ...questions.reading,
-    ].map((q) => toExportQuestion(q, testMeta));
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: "application/json",
-    });
-
+  const exportJson = () => {
+    const blob = new Blob(
+      [JSON.stringify(exportQuestions(questions, testMeta), null, 2)],
+      { type: "application/json" }
+    );
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "questions.json";
     a.click();
   };
 
+  const visibleQuestions = questions.filter(
+    (q) => q.section === currentSection
+  );
+
   return (
     <div className="app">
       {/* LEFT: Editor */}
-      <div
-        // style={{ overflowY: "auto" }}
-        className="editor-panel"
-      >
+      <div className="editor-panel">
         <div className="panel-header">
           <h2>TOPIK Test Editor</h2>
+
           <div style={{ marginBottom: 24 }}>
             <h3>Test Settings</h3>
+
             <label>
               Level:
               <select
-                style={{ marginBottom: 10 }}
                 value={testMeta.level}
                 onChange={(e) =>
                   setTestMeta((p) => ({
@@ -167,10 +157,21 @@ export default function App() {
                 }
               />
             </label>
+
             <div
-              style={{ display: "flex", alignItems: "center", marginTop: 20 }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginTop: 20,
+              }}
             >
-              <button onClick={pickMediaFolder}>📂 Pick Media Folder</button>
+              <button
+                onClick={() => {
+                  pickMediaFolder();
+                }}
+              >
+                📂 Pick Media Folder
+              </button>
 
               {media && (
                 <div style={{ fontSize: 12, opacity: 0.7, marginLeft: 10 }}>
@@ -180,6 +181,7 @@ export default function App() {
               )}
             </div>
           </div>
+
           <div className="tabs">
             <button
               className={`tab ${
@@ -187,32 +189,37 @@ export default function App() {
               }`}
               onClick={() => setCurrentSection("listening")}
             >
-              🎧 Listening ({questions.listening.length})
+              🎧 Listening (
+              {questions.filter((q) => q.section === "listening").length})
             </button>
 
             <button
               className={`tab ${currentSection === "reading" ? "active" : ""}`}
               onClick={() => setCurrentSection("reading")}
             >
-              📖 Reading ({questions.reading.length})
+              📖 Reading (
+              {questions.filter((q) => q.section === "reading").length})
             </button>
           </div>
         </div>
+
         <h3>Questions:</h3>
-        {questions[currentSection].map((q, index) => (
+
+        {visibleQuestions.map((q) => (
           <QuestionEditor
-            key={q.index}
+            key={q.globalIndex}
             question={q}
             testMeta={testMeta}
             onChange={(updated) =>
-              setQuestions((prev) => ({
-                ...prev,
-                [currentSection]: prev[currentSection].map((x, i) =>
-                  i === index ? updated : x
-                ),
-              }))
+              setQuestions((prev) =>
+                normalizeQuestions(
+                  prev.map((x) =>
+                    x.globalIndex === q.globalIndex ? updated : x
+                  )
+                )
+              )
             }
-            onDelete={() => deleteQuestion(index)}
+            onDelete={() => deleteQuestion(q.globalIndex)}
           />
         ))}
 
@@ -222,25 +229,18 @@ export default function App() {
       </div>
 
       {/* RIGHT: JSON Preview */}
-      <div
-        className="preview-panel"
-        // style={{ overflowY: "auto" }}
-      >
+      <div className="preview-panel">
         <div
           className="panel-header"
           style={{ display: "flex", alignItems: "center" }}
         >
           <h3>Live JSON Preview</h3>
-          <button
-            onClick={() => {
-              exportQuestions();
-            }}
-            style={{ marginLeft: 12, height: 30 }}
-          >
+          <button onClick={exportJson} style={{ marginLeft: 12, height: 30 }}>
             💾 Save JSON
           </button>
         </div>
-        <JsonPreview questions={questions} testMeta={testMeta} />
+
+        <JsonPreview questions={questions} meta={testMeta} />
       </div>
     </div>
   );

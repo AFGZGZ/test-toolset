@@ -1,5 +1,6 @@
 // import { QuestionsFileSchema } from "../schema/questionSchema";
 import type { EditorQuestion, TestMeta } from "../types/test";
+import { buildQuestionId } from "./buildQuestionId";
 import type { Question } from "../types/questions";
 
 // export function exportQuestions(questions: unknown) {
@@ -19,21 +20,40 @@ import type { Question } from "../types/questions";
 //   a.click();
 // }
 
-export function toExportQuestion(q: EditorQuestion, meta: TestMeta): Question {
-  const sectionChar = q.section === "listening" ? "l" : "r";
-  const index = String(q.index).padStart(2, "0");
-
+export function toExportQuestion(
+  q: EditorQuestion,
+  meta: TestMeta,
+  section: "listening" | "reading",
+  globalIndex: number
+): Question {
   return {
-    id: `t${meta.level}${meta.testNumber}${sectionChar}-${index}`,
+    id: buildQuestionId(meta, section, globalIndex),
+    section,
+    question: q.question,
+    options: q.options,
+    correctAnswer: q.correctAnswer,
+    media: q.media.map((m) =>
+      m.type === "audio"
+        ? { type: "audio", file: m.file }
+        : { type: "image", files: m.files }
+    ),
+  };
+}
+
+export function exportQuestions(
+  questions: EditorQuestion[],
+  meta: TestMeta
+): Question[] {
+  return questions.map((q) => ({
+    id: buildQuestionId(meta, q.section, q.globalIndex),
     section: q.section,
     question: q.question,
     options: q.options,
     correctAnswer: q.correctAnswer,
-    media: q.media.map((m) => {
-      if (m.type === "audio") {
-        return { type: "audio", file: m.file };
-      }
-      return { type: "image", files: m.files };
-    }),
-  };
+    media: q.media.map((m) =>
+      m.type === "audio"
+        ? { type: "audio", file: m.file }
+        : { type: "image", files: m.files }
+    ),
+  }));
 }

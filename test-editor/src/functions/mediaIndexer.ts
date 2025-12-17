@@ -3,32 +3,39 @@ export type IndexedMedia = {
   images: string[];
 };
 
+type DirectoryHandleWithValues = FileSystemDirectoryHandle & {
+  values(): AsyncIterable<FileSystemHandle>;
+};
+
 const AUDIO_EXT = [".mp3", ".wav"];
 const IMAGE_EXT = [".png", ".jpg", ".jpeg", ".webp"];
 
 export async function pickAndIndexMedia(): Promise<IndexedMedia> {
   const dirHandle = await (window as any).showDirectoryPicker();
-
+  console.log(dirHandle);
   const audio: string[] = [];
   const images: string[] = [];
 
   async function walk(handle: FileSystemDirectoryHandle, prefix = "") {
-    // 👇 entries() IS typed correctly
-    for await (const [, entry] of handle.entries()) {
+    // Cast ONLY values(), not the handle itself
+    const entries = (handle as DirectoryHandleWithValues).values();
+
+    for await (const entry of entries) {
       const path = `${prefix}${entry.name}`;
 
       if (entry.kind === "directory") {
-        await walk(entry, `${path}/`);
-      } else {
-        const lower = entry.name.toLowerCase();
+        await walk(entry as FileSystemDirectoryHandle, `${path}/`);
+        continue;
+      }
 
-        if (AUDIO_EXT.some((e) => lower.endsWith(e))) {
-          audio.push(path);
-        }
+      const lower = entry.name.toLowerCase();
 
-        if (IMAGE_EXT.some((e) => lower.endsWith(e))) {
-          images.push(path);
-        }
+      if (AUDIO_EXT.some((ext) => lower.endsWith(ext))) {
+        audio.push(path);
+      }
+
+      if (IMAGE_EXT.some((ext) => lower.endsWith(ext))) {
+        images.push(path);
       }
     }
   }

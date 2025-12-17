@@ -3,13 +3,11 @@ export type Section = "listening" | "reading";
 export interface AudioMedia {
   type: "audio";
   file: string;
-  source: "auto" | "manual";
 }
 
 export interface ImageMedia {
   type: "image";
   files: string[];
-  source: "auto" | "manual";
 }
 
 export type Media = AudioMedia | ImageMedia;

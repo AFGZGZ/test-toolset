@@ -1,18 +1,22 @@
-import type { Media, AudioMedia, ImageMedia } from "../types/questions";
+import type {
+  EditorMedia,
+  EditorAudioMedia,
+  EditorImageMedia,
+} from "../types/test";
 import { useMedia } from "../context/MediaContext";
 
 interface Props {
   section: "listening" | "reading";
-  media?: Media[];
-  onChange: (media: Media[]) => void;
+  media?: EditorMedia[];
+  onChange: (media: EditorMedia[]) => void;
 }
 
 export function MediaEditor({ section, media = [], onChange }: Props) {
   const { media: indexed } = useMedia();
 
-  const audio = media.find((m): m is AudioMedia => m.type === "audio");
+  const audio = media.find((m): m is EditorAudioMedia => m.type === "audio");
 
-  const images = media.find((m): m is ImageMedia => m.type === "image");
+  const images = media.find((m): m is EditorImageMedia => m.type === "image");
 
   const setAudio = (file: string) => {
     const next = media.filter((m) => m.type !== "audio");

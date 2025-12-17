@@ -5,9 +5,19 @@ export type TestMeta = {
   testNumber: number;
 };
 
-export type EditorMedia =
-  | { type: "audio"; file: string; source: "auto" | "manual" }
-  | { type: "image"; files: string[]; source: "auto" | "manual" };
+export interface EditorAudioMedia {
+  type: "audio";
+  file: string;
+  source: "auto" | "manual";
+}
+
+export interface EditorImageMedia {
+  type: "image";
+  files: string[];
+  source: "auto" | "manual";
+}
+
+export type EditorMedia = EditorAudioMedia | EditorImageMedia;
 
 export type EditorQuestion = {
   id: string;
@@ -16,5 +26,5 @@ export type EditorQuestion = {
   options: [string, string, string, string];
   correctAnswer: string;
   media: EditorMedia[];
-  index: number;
+  globalIndex: number;
 };

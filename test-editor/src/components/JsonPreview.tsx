@@ -1,21 +1,13 @@
-import type { EditorQuestion } from "../types/test";
-import type { Question } from "../types/questions";
-import type { TestMeta } from "../types/test";
-import { toExportQuestion } from "../functions/exportQuestions";
+import type { EditorQuestion, TestMeta } from "../types/test";
+import { exportQuestions } from "../functions/exportQuestions";
 
 interface Props {
-  questions: {
-    listening: EditorQuestion[];
-    reading: EditorQuestion[];
-  };
-  testMeta: TestMeta;
+  questions: EditorQuestion[];
+  meta: TestMeta;
 }
 
-export function JsonPreview({ questions, testMeta }: Props) {
-  const exportQuestions: Question[] = [
-    ...questions.listening,
-    ...questions.reading,
-  ].map((q) => toExportQuestion(q, testMeta));
+export function JsonPreview({ questions, meta }: Props) {
+  const finalQuestions = exportQuestions(questions, meta);
 
   return (
     <pre
@@ -30,7 +22,7 @@ export function JsonPreview({ questions, testMeta }: Props) {
         wordBreak: "break-word",
       }}
     >
-      {JSON.stringify(exportQuestions, null, 2)}
+      {JSON.stringify(finalQuestions, null, 2)}
     </pre>
   );
 }

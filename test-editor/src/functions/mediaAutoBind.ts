@@ -1,6 +1,6 @@
 import type { EditorQuestion } from "../types/test";
 import type { MediaIndex } from "../types/media";
-import type { AudioMedia, ImageMedia } from "../types/questions";
+import type { EditorAudioMedia, EditorImageMedia } from "../types/test";
 
 const baseName = (path: string) =>
   path
@@ -42,7 +42,7 @@ export function autoBindMedia(
                 type: "audio",
                 file: audioMatch,
                 source: "auto",
-              } as AudioMedia,
+              } as EditorAudioMedia,
             ]
           : []),
 
@@ -54,7 +54,7 @@ export function autoBindMedia(
                 type: "image",
                 files: imageMatches,
                 source: "auto",
-              } as ImageMedia,
+              } as EditorImageMedia,
             ]
           : []),
       ],
