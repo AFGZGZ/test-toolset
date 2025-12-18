@@ -1,4 +1,5 @@
-import type { EditorQuestion, TestMeta } from "../types/test";
+import type { TestMeta } from "../types/test";
+import type { EditorQuestion } from "../types/editorQuestions";
 import { exportQuestions } from "../functions/exportQuestions";
 
 interface Props {

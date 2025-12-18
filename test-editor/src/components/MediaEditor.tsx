@@ -2,7 +2,7 @@ import type {
   EditorMedia,
   EditorAudioMedia,
   EditorImageMedia,
-} from "../types/test";
+} from "../types/editorQuestions";
 import { useMedia } from "../context/MediaContext";
 
 interface Props {
@@ -13,19 +13,19 @@ interface Props {
 
 export function MediaEditor({ section, media = [], onChange }: Props) {
   const { media: indexed } = useMedia();
-
+  console.log("media: ", media);
   const audio = media.find((m): m is EditorAudioMedia => m.type === "audio");
-
+  console.log("audio: ", audio);
   const images = media.find((m): m is EditorImageMedia => m.type === "image");
 
-  const setAudio = (file: string) => {
-    const next = media.filter((m) => m.type !== "audio");
+  /* ---------- AUDIO ---------- */
 
+  const setAudio = (file: string) => {
     onChange([
-      ...next,
+      ...media.filter((m) => m.type !== "audio"),
       {
         type: "audio",
-        file,
+        files: [file],
         source: "manual",
       },
     ]);
@@ -34,6 +34,8 @@ export function MediaEditor({ section, media = [], onChange }: Props) {
   const removeAudio = () => {
     onChange(media.filter((m) => m.type !== "audio"));
   };
+
+  /* ---------- IMAGES ---------- */
 
   const addImage = (file: string) => {
     const current = images?.files ?? [];
@@ -71,15 +73,21 @@ export function MediaEditor({ section, media = [], onChange }: Props) {
     <div className="media-editor">
       <h4>Media</h4>
 
+      {/* ---------- AUDIO ---------- */}
       {section === "listening" && (
         <div className="media-block">
           <label>Audio</label>
 
           {audio ? (
             <div className="media-row">
-              <code>{audio.file}</code>
+              <code>{audio.files[0]}</code>
               {audio.source === "auto" && <span className="badge">auto</span>}
-              <button onClick={removeAudio}>Remove</button>
+              <button
+                style={{ marginLeft: "10px", padding: "1px 3px", fontSize: 10 }}
+                onClick={removeAudio}
+              >
+                ✕
+              </button>
             </div>
           ) : (
             <select
@@ -102,14 +110,20 @@ export function MediaEditor({ section, media = [], onChange }: Props) {
         </div>
       )}
 
+      {/* ---------- IMAGES ---------- */}
       <div className="media-block">
         <label>Images</label>
 
         {(images?.files ?? []).map((file, i) => (
-          <div key={i}>
+          <div style={{ marginBottom: "6px" }} key={i} className="media-row">
             <code>{file}</code>
             {images?.source === "auto" && <span className="badge">auto</span>}
-            <button onClick={() => removeImage(i)}>✕</button>
+            <button
+              style={{ marginLeft: "10px", padding: "1px 3px", fontSize: 10 }}
+              onClick={() => removeImage(i)}
+            >
+              ✕
+            </button>
           </div>
         ))}
 

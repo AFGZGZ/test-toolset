@@ -3,21 +3,20 @@ import path from "path";
 import { Manifest, Question } from "../types";
 import { scanPackFiles } from "./scanFiles";
 
-export function createManifest(
-  packDir: string,
-  questions: Question[]
-): Manifest {
+export interface PackInput {
+  id: string;
+  title: string;
+  level: string;
+  version: number;
+  author: string;
+}
+
+export function createManifest(packDir: string, pack: PackInput): Manifest {
   const { files, totalSize } = scanPackFiles(packDir);
 
   const manifest: Manifest = {
-    schemaVersion: 1,
     pack: {
-      id: "topik-1-mock-01",
-      type: "test",
-      level: "TOPIK_I",
-      title: "TOPIK I Mock Test 01",
-      language: "ko",
-      version: 1,
+      ...pack,
       releasedAt: new Date().toISOString().slice(0, 10),
     },
     structure: {

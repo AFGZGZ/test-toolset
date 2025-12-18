@@ -4,11 +4,14 @@ import archiver from "archiver";
 
 export async function createZip(
   packDir: string,
+  packId: string,
   outDir = "./dist"
 ): Promise<string> {
   if (!fs.existsSync(outDir)) fs.mkdirSync(outDir);
 
-  const zipPath = path.join(outDir, path.basename(packDir) + ".zip");
+  // const zipPath = path.join(outDir, path.basename(packDir) + ".zip");
+  const zipName = `${packId}.zip`;
+  const zipPath = path.join(packDir, "..", zipName);
 
   const output = fs.createWriteStream(zipPath);
   const archive = archiver("zip", { zlib: { level: 9 } });

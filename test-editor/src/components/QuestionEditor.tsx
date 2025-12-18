@@ -1,4 +1,5 @@
-import type { EditorQuestion, TestMeta } from "../types/test";
+import type { TestMeta } from "../types/test";
+import type { EditorQuestion } from "../types/editorQuestions";
 import { MediaEditor } from "./MediaEditor";
 
 export interface Props {
@@ -42,14 +43,26 @@ export function QuestionEditor({ question, onChange, onDelete }: Props) {
           Delete
         </button>
       </header>
-
+      <input
+        style={{ marginBottom: "10px" }}
+        type="text"
+        placeholder="Title (optional)"
+        value={question.title ?? ""}
+        onChange={(e) => onChange({ ...question, title: e.target.value })}
+      />
       <textarea
         className="question-text"
         placeholder="Question text"
         value={question.question}
         onChange={(e) => update({ question: e.target.value })}
       />
-
+      <input
+        style={{ marginBottom: "20px" }}
+        type="text"
+        placeholder="Additional text (optional)"
+        value={question.additional ?? ""}
+        onChange={(e) => onChange({ ...question, additional: e.target.value })}
+      />
       <div className="options">
         {question.options.map((opt, i) => (
           <input

@@ -1,37 +1,47 @@
 export type FileType = "audio" | "image" | "json";
 
 export interface ManifestFile {
-  path: string; // relative to pack root
+  path: string;
   type: FileType;
-  size: number; // bytes
+  size: number;
 }
 
-export type RouteType = "mp3" | "img";
+export type Section = "listening" | "reading";
 
-export interface QuestionRoute {
-  type: RouteType;
-  route: string;
+export interface AudioMedia {
+  type: "audio";
+  files: string[];
 }
+
+export interface ImageMedia {
+  type: "image";
+  files: string[];
+}
+
+export type Media = AudioMedia | ImageMedia;
 
 export interface Question {
   id: string;
+  section: Section;
+  title?: string;
   question: string;
-  options: string[];
+  additional?: string;
+  options: [string, string, string, string];
   correctAnswer: string;
-  routes?: QuestionRoute[];
+  media: Media[];
+}
+
+interface PackMeta {
+  id: string;
+  title: string;
+  level: string;
+  version: number;
+  releasedAt: string;
+  author: string;
 }
 
 export interface Manifest {
-  schemaVersion: number;
-  pack: {
-    id: string;
-    type: "test" | "lesson";
-    level: string;
-    title: string;
-    language: string;
-    version: number;
-    releasedAt: string;
-  };
+  pack: PackMeta;
   structure: {
     entry: string;
     audioDir: string;

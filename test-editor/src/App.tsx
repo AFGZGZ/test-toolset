@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Section } from "./types/questions";
-import type { EditorQuestion, TestMeta } from "./types/test";
+import type { TestMeta } from "./types/test";
+import type { EditorQuestion } from "./types/editorQuestions";
 import { QuestionEditor } from "./components/QuestionEditor";
 import { JsonPreview } from "./components/JsonPreview";
 import { pickAndIndexMedia } from "./functions/mediaIndexer";
@@ -15,7 +16,9 @@ const createEmptyQuestion = (
 ): EditorQuestion => ({
   id: "",
   section,
+  title: "",
   question: "",
+  additional: "",
   options: ["", "", "", ""],
   correctAnswer: "",
   media: [],
@@ -36,34 +39,45 @@ export default function App() {
 
   const { media, setMedia } = useMedia();
 
-  const normalizeQuestions = (
-    list: EditorQuestion[],
-    mediaIndex = media
-  ): EditorQuestion[] => {
-    const withIndex = list.map((q, i) => ({
+  // This version imposes auto media always!!
+  // const normalizeQuestions = (
+  //   list: EditorQuestion[],
+  //   mediaIndex = media
+  // ): EditorQuestion[] => {
+  //   const withIndex = list.map((q, i) => ({
+  //     ...q,
+  //     globalIndex: i + 1,
+  //   }));
+
+  //   const withIds = withIndex.map((q) => ({
+  //     ...q,
+  //     id: buildQuestionId(testMeta, q.section, q.globalIndex),
+  //   }));
+
+  //   return mediaIndex ? autoBindMedia(withIds, mediaIndex) : withIds;
+
+  // };
+
+  const normalizeQuestions = (list: EditorQuestion[]): EditorQuestion[] =>
+    list.map((q, i) => ({
       ...q,
       globalIndex: i + 1,
+      id: buildQuestionId(testMeta, q.section, i + 1),
     }));
-
-    const withIds = withIndex.map((q) => ({
-      ...q,
-      id: buildQuestionId(testMeta, q.section, q.globalIndex),
-    }));
-
-    return mediaIndex ? autoBindMedia(withIds, mediaIndex) : withIds;
-  };
 
   const pickMediaFolder = async () => {
     const indexed = await pickAndIndexMedia();
     if (!indexed) return;
 
     setMedia(indexed);
-    setQuestions((prev) => normalizeQuestions(prev, indexed));
+    // setQuestions((prev) => normalizeQuestions(prev, indexed));
+    setQuestions((prev) => autoBindMedia(normalizeQuestions(prev), indexed));
   };
 
   useEffect(() => {
     if (!media) return;
-    setQuestions((prev) => normalizeQuestions(prev, media));
+    // setQuestions((prev) => normalizeQuestions(prev, media));
+    setQuestions((prev) => autoBindMedia(normalizeQuestions(prev), media));
   }, [media, testMeta]);
 
   const addQuestion = () => {
@@ -73,13 +87,11 @@ export default function App() {
       let next: EditorQuestion[];
 
       if (currentSection === "listening") {
-        // Insert BEFORE first reading question
         const firstReadingIndex = prev.findIndex(
           (q) => q.section === "reading"
         );
 
         if (firstReadingIndex === -1) {
-          // No reading yet → append
           next = [...prev, newQuestion];
         } else {
           next = [
@@ -89,13 +101,15 @@ export default function App() {
           ];
         }
       } else {
-        // Reading questions always go at the end
         next = [...prev, newQuestion];
       }
 
-      return normalizeQuestions(next);
+      const normalized = normalizeQuestions(next);
+
+      return media ? autoBindMedia(normalized, media) : normalized;
     });
   };
+
   const deleteQuestion = (globalIndex: number) => {
     setQuestions((prev) => {
       const next = prev.filter((q) => q.globalIndex !== globalIndex);

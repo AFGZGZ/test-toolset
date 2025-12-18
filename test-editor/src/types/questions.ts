@@ -2,7 +2,7 @@ export type Section = "listening" | "reading";
 
 export interface AudioMedia {
   type: "audio";
-  file: string;
+  files: string[];
 }
 
 export interface ImageMedia {
@@ -15,7 +15,9 @@ export type Media = AudioMedia | ImageMedia;
 export interface Question {
   id: string;
   section: Section;
+  title?: string;
   question: string;
+  additional?: string;
   options: [string, string, string, string];
   correctAnswer: string;
   media: Media[];

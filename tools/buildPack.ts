@@ -4,6 +4,7 @@ import { Question } from "../types";
 import { validatePack } from "./validatePack";
 import { createManifest } from "./createManifest";
 import { createZip } from "./createZip";
+import { promptPackInfo } from "./promptPackInfo";
 
 const packDir = process.argv[2];
 if (!packDir) {
@@ -16,9 +17,10 @@ const questions: Question[] = JSON.parse(
 );
 
 (async () => {
-  const manifest = createManifest(packDir, questions);
+  const packInfo = await promptPackInfo();
+  const manifest = createManifest(packDir, packInfo);
   validatePack(questions, manifest.files);
-  const zipPath = await createZip(packDir);
+  const zipPath = await createZip(packDir, packInfo.id);
 
   console.log("✅ Pack built successfully");
   console.log("📄 manifest.json created");

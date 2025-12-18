@@ -8,11 +8,15 @@ export function validatePack(
   const errors: string[] = [];
 
   for (const q of questions) {
-    if (!q.routes) continue;
+    if (!q.media) continue;
 
-    for (const r of q.routes) {
-      if (!fileSet.has(r.route)) {
-        errors.push(`Missing file for question "${q.id}": ${r.route}`);
+    for (const media of q.media) {
+      for (const file of media.files) {
+        if (!fileSet.has(file)) {
+          errors.push(
+            `Missing ${media.type} file for question "${q.id}": ${file}`
+          );
+        }
       }
     }
   }
