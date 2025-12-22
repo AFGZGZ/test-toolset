@@ -11,7 +11,8 @@ export async function createZip(
 
   // const zipPath = path.join(outDir, path.basename(packDir) + ".zip");
   const zipName = `${packId}.zip`;
-  const zipPath = path.join(packDir, "..", zipName);
+  // const zipPath = path.join(packDir, "..", zipName);
+  const zipPath = path.join(outDir, zipName);
 
   const output = fs.createWriteStream(zipPath);
   const archive = archiver("zip", { zlib: { level: 9 } });

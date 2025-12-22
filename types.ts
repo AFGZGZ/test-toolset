@@ -38,6 +38,7 @@ interface PackMeta {
   version: number;
   releasedAt: string;
   author: string;
+  totalQuestions: number;
 }
 
 export interface Manifest {

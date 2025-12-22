@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Section } from "./types/questions";
 import type { TestMeta } from "./types/test";
 import type { EditorQuestion } from "./types/editorQuestions";
@@ -26,6 +26,7 @@ const createEmptyQuestion = (
 });
 
 export default function App() {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [testMeta, setTestMeta] = useState<TestMeta>({
     level: 1,
     testNumber: 1,
@@ -126,6 +127,54 @@ export default function App() {
     a.href = URL.createObjectURL(blob);
     a.download = "questions.json";
     a.click();
+  };
+
+  const hydrateQuestionsFromJson = (
+    raw: any[],
+    sectionFallback: Section = "listening"
+  ): EditorQuestion[] => {
+    return raw.map((q, index) => ({
+      id: q.id ?? "",
+      section: q.section ?? sectionFallback,
+      title: q.title ?? "",
+      question: q.question ?? "",
+      additional: q.additional ?? "",
+      options: [
+        q.options?.[0] ?? "",
+        q.options?.[1] ?? "",
+        q.options?.[2] ?? "",
+        q.options?.[3] ?? "",
+      ],
+      correctAnswer: q.correctAnswer ?? "",
+      media: Array.isArray(q.media) ? q.media : [],
+      globalIndex: index + 1,
+    }));
+  };
+
+  const handleLoadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+
+      if (!Array.isArray(json)) {
+        alert("Invalid questions.json format");
+        return;
+      }
+
+      const hydrated = hydrateQuestionsFromJson(json);
+
+      const normalized = normalizeQuestions(hydrated);
+
+      setQuestions(media ? autoBindMedia(normalized, media) : normalized);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load questions.json");
+    } finally {
+      e.target.value = ""; // allow re-upload same file
+    }
   };
 
   const visibleQuestions = questions.filter(
@@ -246,14 +295,37 @@ export default function App() {
       <div className="preview-panel">
         <div
           className="panel-header"
-          style={{ display: "flex", alignItems: "center" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            padding: 0,
+            justifyContent: "space-between",
+            paddingBottom: 10,
+          }}
         >
-          <h3>Live JSON Preview</h3>
-          <button onClick={exportJson} style={{ marginLeft: 12, height: 30 }}>
-            💾 Save JSON
-          </button>
-        </div>
+          <h3 style={{ marginBottom: 0, marginTop: 0 }}>Live JSON Preview</h3>
+          <div
+            style={{
+              justifyContent: "space-between",
+              marginRight: 5,
+            }}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json"
+              hidden
+              onChange={handleLoadFile}
+            />
 
+            <button onClick={() => fileInputRef.current?.click()}>
+              📂 Load JSON
+            </button>
+            <button onClick={exportJson} style={{ marginLeft: 12, height: 30 }}>
+              💾 Save JSON
+            </button>
+          </div>
+        </div>
         <JsonPreview questions={questions} meta={testMeta} />
       </div>
     </div>

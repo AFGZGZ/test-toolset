@@ -1,8 +1,18 @@
 ### TEST EDITOR
 
 RUN:
-cd test-editor
+
+```cd test-editor
 npm run dev
+```
+
+BUILD:
+
+```cd test-editor
+npm run build
+```
+
+\*Copy the content of test-editor/dist in to the tools folder for github pages deployment
 
 ### CLI TOOL
 

@@ -18,7 +18,7 @@ const questions: Question[] = JSON.parse(
 
 (async () => {
   const packInfo = await promptPackInfo();
-  const manifest = createManifest(packDir, packInfo);
+  const manifest = createManifest(packDir, packInfo, questions.length);
   validatePack(questions, manifest.files);
   const zipPath = await createZip(packDir, packInfo.id);
 

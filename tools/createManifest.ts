@@ -11,13 +11,18 @@ export interface PackInput {
   author: string;
 }
 
-export function createManifest(packDir: string, pack: PackInput): Manifest {
+export function createManifest(
+  packDir: string,
+  pack: PackInput,
+  totalQuestions: number
+): Manifest {
   const { files, totalSize } = scanPackFiles(packDir);
 
   const manifest: Manifest = {
     pack: {
       ...pack,
       releasedAt: new Date().toISOString().slice(0, 10),
+      totalQuestions: totalQuestions,
     },
     structure: {
       entry: "questions.json",
