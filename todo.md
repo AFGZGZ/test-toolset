@@ -6,3 +6,4 @@
 [X] load previous made JSON
 [X] change zip file output folder
 [ ] make a script to copy build files to docs for github pages deployment
+[ ] standarize Test # behaviour when JSON is loaded

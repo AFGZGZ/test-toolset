@@ -44,3 +44,7 @@ Output:
 │ └── xxx.png
 │ └── ...
 ```
+
+## For building the packs
+
+npx ts-node buildPack.ts ../pack
